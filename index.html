@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IM Incorporadora · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --bg:#eef1f6;--card:#fff;--line:#e3e7ee;--line2:#f0f2f7;
+    --ink:#1b2433;--ink2:#5b6577;--ink3:#9aa3b2;
+    --blue:#2f6cea;--blue-d:#1e4fd0;--blue-l:#e9f0fe;
+    --green:#1aa053;--amber:#e0a93a;--red:#e3534f;--track:#eef1f6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-feature-settings:'tnum' 1;line-height:1.4;-webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-lining}
+
+  .backdrop{position:fixed;inset:0;background:rgba(20,28,42,.35);opacity:0;visibility:hidden;transition:.22s;z-index:40}
+  .backdrop.show{opacity:1;visibility:visible}
+  .sidebar{position:fixed;top:0;left:0;height:100%;width:236px;background:#fff;border-right:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;transform:translateX(-100%);transition:.24s cubic-bezier(.4,0,.2,1);z-index:50}
+  .sidebar.open{transform:translateX(0);box-shadow:6px 0 30px rgba(20,28,42,.12)}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:4px 6px}
+  .logo .mk{width:38px;height:38px;border:2px solid var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--blue);font-size:14px}
+  .logo img.logo-img{max-height:42px;max-width:170px;object-fit:contain}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--ink2);font-size:13px;text-decoration:none;margin-bottom:2px;cursor:pointer}
+  .nav a.active{background:var(--blue);color:#fff;font-weight:500}
+  .nav a:not(.active):hover{background:var(--blue-l)}
+  .nav svg{width:17px;height:17px;flex-shrink:0}
+
+  .main{padding:16px 22px 30px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .tb-left{display:flex;align-items:center;gap:14px}
+  .burger{width:40px;height:40px;border:none;background:transparent;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .burger svg{width:22px;height:22px;stroke:var(--ink)}
+  .ttl-h h1{font-size:20px;font-weight:700;line-height:1.1}
+  .ttl-h .sub{font-size:11px;color:var(--ink3)}
+  .controls{display:flex;align-items:center;gap:9px;position:relative}
+  .pill{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:7px;cursor:pointer}
+  .pill:hover{border-color:var(--blue);color:var(--ink)}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  .date-pop{position:absolute;top:46px;right:74px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 30px rgba(20,28,42,.14);padding:14px;z-index:60;display:none;width:240px}
+  .date-pop.show{display:block}
+  .date-pop label{display:block;font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+  .date-pop input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-bottom:11px;font-family:inherit;color:var(--ink)}
+  .date-pop .acts{display:flex;gap:8px}
+  .date-pop button{flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink2)}
+  .date-pop button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+
+  .view{display:none}.view.active{display:block}
+  .lbl{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:16px 0 9px}
+  .lbl:first-of-type{margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .row{display:grid;gap:11px}
+  .kgrid{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+  .c3{grid-template-columns:repeat(3,1fr)}
+  .mid{grid-template-columns:1.1fr 1fr 1.2fr}
+  .g2{grid-template-columns:1fr 1fr}
+  @media(max-width:1080px){.c3,.mid,.g2{grid-template-columns:1fr}}
+
+  .kpi{display:flex;gap:11px;align-items:flex-start}
+  .kpi .bdg{width:38px;height:38px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .kpi .bdg svg{width:18px;height:18px;stroke:#fff;fill:none}
+  .kpi .cap{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  .kpi .val{font-size:18px;font-weight:700;margin:3px 0;letter-spacing:-0.3px}
+  .kpi .val.green{color:var(--green)}.kpi .val.red{color:var(--red)}
+  .kpi .sub{font-size:10px;color:var(--ink3)}
+  .kpi.estoque .bdg{background:var(--green)}.kpi.estoque .val{color:var(--green)}
+  .kpi.win .bdg{background:var(--red)}
+
+  .conv .val{font-size:22px;font-weight:700;color:var(--blue);margin:5px 0 3px}
+  .conv .cap{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  .conv .sub{font-size:11px;color:var(--ink3)}
+
+  .pbox{background:var(--blue);color:#fff;border-radius:11px;padding:15px;position:relative;min-height:118px;display:flex;flex-direction:column;justify-content:center}
+  .pbox .cap{font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;opacity:.85;font-weight:600}
+  .pbox .val{font-size:24px;font-weight:700;margin:7px 0 4px;letter-spacing:-0.5px}
+  .pbox .sub{font-size:10px;opacity:.82}
+  .pbox .ic{position:absolute;bottom:12px;right:12px}.pbox .ic svg{width:30px;height:30px;stroke:rgba(255,255,255,.4);fill:none}
+
+  .sect-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+  .sect-card h2{font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2);margin-bottom:13px}
+
+  .prev-card{background:var(--blue);color:#fff;border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px}
+  .ring{width:118px;height:118px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(#fff var(--p,0%), rgba(255,255,255,.22) 0)}
+  .ring-in{width:92px;height:92px;border-radius:50%;background:var(--blue);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .ring-in .v{font-size:16px;font-weight:700}.ring-in .l{font-size:8.5px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .prev-card .info .cap{font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;opacity:.85;font-weight:600}
+  .prev-card .info .pc{font-size:26px;font-weight:700;margin:5px 0 4px}
+  .prev-card .info .sub{font-size:10px;opacity:.85;line-height:1.5}
+
+  .metas2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .mblk .mc{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  .mblk .mv{font-size:18px;font-weight:700;margin:5px 0 2px}
+  .mblk .md{font-size:11px;color:var(--ink3);margin-bottom:8px}
+  .mblk .trk{height:7px;background:var(--track);border-radius:4px;overflow:hidden}.mblk .trk i{display:block;height:100%;border-radius:4px}
+  .mblk .pc{font-size:11px;font-weight:500;margin-top:7px}
+
+  .pexec .r{display:grid;grid-template-columns:96px 1fr auto;gap:9px;align-items:center;margin-bottom:9px;font-size:11px}
+  .pexec .nm{color:var(--ink2);font-weight:500;text-transform:uppercase;letter-spacing:.3px;font-size:9.5px}
+  .pexec .bar{height:12px;background:var(--track);border-radius:3px;overflow:hidden}.pexec .bar i{display:block;height:100%;background:var(--blue);border-radius:3px}
+  .pexec .vl{color:var(--ink);font-weight:600;white-space:nowrap}.pexec .vl span{color:var(--ink3);font-weight:400;font-size:10px}
+
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);font-weight:600;text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--line)}
+  thead th.r,td.r{text-align:right}
+  tbody td{font-size:11.5px;padding:9px 8px 9px 0;border-bottom:1px solid var(--line2)}
+  tbody tr:last-child td{border-bottom:none}
+  td .sub{font-size:9.5px;color:var(--ink3)}
+  .tbar{height:6px;width:60px;background:var(--track);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}.tbar i{display:block;height:100%;border-radius:3px}
+
+  .stat .cap{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  .stat .val{font-size:19px;font-weight:700;margin:6px 0 5px}.stat .val.red{color:var(--red)}
+  .stat .sub{font-size:10px;color:var(--ink3)}
+  .note{font-size:11px;color:var(--ink3);margin-top:10px}
+  .chart-box{position:relative;height:180px}
+  .legend{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .legend .r{display:flex;align-items:center;justify-content:space-between;font-size:11px}
+  .legend .lf{display:flex;align-items:center;gap:7px;color:var(--ink2)}
+  .legend .d{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .legend .vv{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  /* Tela de TV: palco fixo que escala pra caber em qualquer polegada, sem scroll */
+  .tvfit{position:relative;width:100%;height:calc(100vh - 96px);overflow:hidden}
+  .tvstage{position:absolute;top:0;left:50%;width:1840px;transform-origin:top center;transform:translateX(-50%) scale(var(--tvs,1))}
+  footer{text-align:center;font-size:11px;color:var(--ink3);margin-top:18px}
+
+  /* #2 fluxo normal (sem position:fixed) + #1 footer escondido — mata a sobreposição na raiz */
+  .main{height:100vh;display:flex;flex-direction:column;overflow:hidden;padding:12px 22px 0}
+  .view.active{flex:1 1 auto;min-height:0;overflow:auto}
+  footer{display:none}
+  .tvcol{height:100%;width:100%;background:var(--bg);
+         display:grid;grid-template-rows:130fr 235fr 235fr 114fr 285fr;gap:9px;overflow:hidden}
+  .tvcol>.blk{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  /* título de seção BLINDADO: maior, com altura garantida — nunca é cortado nem empurrado */
+  .tvcol>.blk>.lbl{flex:0 0 auto;margin:0 0 4px;line-height:1.15;font-size:12px;min-height:15px;white-space:nowrap}
+  /* cards comprimem antes de empurrar o título/faixa */
+  .tvcol .row.kgrid>.card{min-height:0;overflow:hidden}
+  .tvcol>.blk>.row{flex:1 1 auto;min-height:0;align-content:stretch}
+  .row.fill{height:100%}
+  .row.fill>.sect-card{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .sect-card.scroll{overflow:auto}
+  .tvcol .card{padding:5px 9px}
+  .tvcol .kpi{gap:7px;align-items:center}
+  .tvcol .kpi .bdg{width:22px;height:22px;flex:0 0 auto}.tvcol .kpi .bdg svg{width:11px;height:11px}
+  /* cards padronizados: cap até 2 linhas iguais p/ todos; sub 1 linha com reticências */
+  .tvcol .kpi>div:last-child{min-width:0;flex:1}
+  .tvcol .kpi .cap{font-size:7.5px;letter-spacing:.3px;line-height:1.25;max-height:19px;overflow:hidden}
+  .tvcol .kpi .val{font-size:13px;margin:0}
+  .tvcol .kpi .sub{font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tvcol .sect-card{padding:9px 12px}
+  .tvcol .sect-card h2{margin-bottom:5px;font-size:10.5px}
+  .tvcol .prev-card{padding:9px 12px;gap:5px;flex-direction:column;align-items:stretch}
+  .tvcol .prev-card h2{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:rgba(255,255,255,.92);margin:0}
+  .tvcol .prevbody{display:flex;align-items:center;gap:11px;flex:1}
+  .tvcol .ring{width:84px;height:84px}.tvcol .ring-in{width:66px;height:66px}
+  .tvcol .ring-in .v{font-size:18px}.tvcol .ring-in .l{font-size:8px}
+  .tvcol .prev-card .info .pc{font-size:20px;margin:2px 0}.tvcol .prev-card .info .sub{font-size:9px;line-height:1.3}
+  .tvcol .pexec .r{margin-bottom:2px;grid-template-columns:92px 1fr auto;font-size:10px}.tvcol .pexec .bar{height:9px}
+  .tvcol .metas2{gap:9px}.tvcol .mblk .mv{font-size:14px;margin:2px 0 1px}.tvcol .mblk .mc{font-size:9px}
+  .tvcol .pbox{padding:8px 10px;min-height:0}.tvcol .pbox .val{font-size:15px;margin:2px 0 1px}.tvcol .pbox .cap{font-size:8px}
+  .tvcol .conv .val{font-size:14px;margin:1px 0}.tvcol .conv .cap{font-size:8px}.tvcol .conv .sub{font-size:8px}
+  .tvcol tbody td{padding:4px 7px;font-size:10px}.tvcol thead th{padding:0 7px 4px 0;font-size:8px}.tvcol td .sub{font-size:8px}
+  .s3{grid-template-columns:1.1fr 3.1fr 1.65fr}
+  .row.s3 th,.row.s3 td{white-space:nowrap}
+  .tvcol .row.s3 tbody td{padding:3px 8px}
+  .row.s3 .tbar{max-width:120px;margin-left:auto}
+  .metas2.m3{grid-template-columns:1fr 1fr 1fr}
+  .prevstack{display:flex;flex-direction:column;gap:8px;height:100%}
+  .prevstack .pv2{flex:1 1 0;justify-content:center;background:transparent;color:var(--ink);border:none;padding-left:0}
+  .prevstack .pv2 .cap{color:var(--ink3);opacity:1}
+  .valrow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .valrow .val{font-size:22px!important;margin:0!important;color:var(--ink)!important}
+  .valrow .sub{font-size:9px;color:var(--ink3);opacity:1}
+  /* header compacto pra sobrar espaço (títulos sempre visíveis) */
+  .main{padding-top:10px}
+  .topbar{margin-bottom:6px;padding-bottom:8px}
+  .ttl-h h1{font-size:16px}.ttl-h .sub{font-size:10px}.burger{width:34px;height:34px}
+  /* legendas: 1 coluna, cada item preenche a altura; número à esquerda, texto à direita */
+  .chart-row{display:flex;gap:10px;align-items:stretch;height:100%;min-height:0}
+  .chart-row .chart-box{flex:0 0 auto;height:100%!important;aspect-ratio:1;min-height:0;min-width:0;width:auto;max-width:none;overflow:hidden;position:relative}
+  .chart-row .legend{flex:1 1 auto;display:grid;height:100%;gap:2px 14px;overflow:hidden;margin-top:0;align-content:stretch}
+  #leg-etapas{grid-template-columns:1fr;grid-auto-rows:1fr}
+  /* motivos: donut MENOR (menos branco) -> legenda larga; motivo ao lado do número, palavra inteira */
+  .chart-row.mot .chart-box{height:84%!important;align-self:center}
+  .chart-row.mot{gap:8px}
+  #leg-motivos{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(5,1fr);grid-auto-flow:column;column-gap:18px}
+  #leg-motivos .r{grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:center;min-height:0}
+  #leg-motivos .vv{font-size:10.5px}
+  #leg-motivos .lg{white-space:normal;line-height:1.1;font-size:9.5px;overflow:visible;text-overflow:clip}
+  /* valores dos KPIs sempre em 1 linha (R$ junto do número) */
+  .tvcol .kpi .val{white-space:nowrap}
+  /* "i" de contexto (hover mostra a explicação) */
+  .hint{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;
+        border:1px solid var(--ink3);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;
+        cursor:help;vertical-align:2px;margin-left:4px}
+  .chart-row .legend .r{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-size:10px;min-height:0}
+  .chart-row .legend .numgrp{display:flex;align-items:center;gap:5px;min-width:0}
+  .chart-row .legend .d{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+  .chart-row .legend .vv{font-weight:700;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .chart-row .legend .lg{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .blk.s4{flex-direction:row;gap:14px}
+  .s4grp{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .s4grp>.lbl{flex:0 0 auto;margin:0 0 4px;line-height:1.15;font-size:12px;min-height:15px;white-space:nowrap}
+  .s4grp>.row{flex:1 1 auto;min-height:0;align-content:stretch}
+  .dc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .dc b{font-size:18px;font-weight:700;color:var(--ink)}
+  .c2{grid-template-columns:1fr 1fr}
+  .c6{grid-template-columns:repeat(6,1fr)}
+  .tvcol.tvconv{grid-template-rows:14fr 43fr 43fr}
+  .tvconv .blk>.sect-card{flex:1 1 auto;min-height:0}
+  /* Conversas nível KPIs: 5 faixas (indicadores / anel+funil / SDR / rotação / donuts) */
+  .tvcol.tvconv2{grid-template-rows:minmax(0,13fr) minmax(0,19fr) minmax(0,22fr) minmax(0,22fr) minmax(0,24fr)}
+  .tvconv2 .blk>.sect-card{flex:1 1 auto;min-height:0}
+  .tvcol .row.kgrid6{grid-template-columns:repeat(6,minmax(0,1fr));align-content:center}
+  #leg-agsdr{grid-template-columns:1fr;grid-auto-rows:1fr}
+  #leg-desfsdr{grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);grid-auto-flow:column}
+  /* matriz de rotação SDR × corretor (números, sem cor) */
+  .matrix{width:100%;border-collapse:collapse}
+  .matrix th,.matrix td{padding:4px 10px}
+  .matrix thead th{font-size:8.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3)}
+  .matrix tbody td{font-size:11px;border-top:1px solid var(--line)}
+  .matrix tr.mtot td{font-weight:700;border-top:2px solid var(--line);color:var(--ink)}
+  .matrix td:first-child,.matrix th:first-child{text-align:left}
+  /* CRM: palco FIXO 1840x1010 (só o CRM) escalado por fitStage() -> cabe em QUALQUER tela.
+     KPIs e Conversas NÃO usam isto. 4 faixas: visão / metas+conversão / pipeline / origem|perdas. */
+  .view[data-view="crm"].active{overflow:hidden}
+  .tvcol.tvcrm{width:1840px;height:1010px;transform-origin:top left;
+               grid-template-rows:minmax(0,13fr) minmax(0,27.5fr) minmax(0,24.5fr) minmax(0,31fr)}
+  .tvcrm .lbl{font-size:15px;letter-spacing:.6px}
+  .tvcrm .s4grp>.lbl{font-size:15px;letter-spacing:.6px}
+  .tvcrm .s4grp>.sect-card{flex:1 1 auto;min-height:0}
+  .tvcrm .sect-card tbody td{font-size:15px;padding:6px 10px}
+  .tvcrm .sect-card thead th,.tvcrm .split thead th{font-size:11px}
+  .tvcrm .split tbody td{font-size:16px;padding:6px 10px}
+  .tvcrm .split td .sub{font-size:11px}
+  /* colunas: nome 17% + vgv/meta/% compactos -> conversão começa em ~49% (sem vão em branco) */
+  .split th:nth-child(2),.split th:nth-child(3){width:11%}
+  .split th:nth-child(4){width:10%}
+  /* título em duas partes, alinhado com a divisão metas | conversão */
+  .lbl2{display:grid;grid-template-columns:49fr 51fr;gap:0}
+  /* seta = linha ATRAVESSANDO todo o vão entre as etapas, número cortando no meio + ponta */
+  .split th:nth-child(5),.split th:nth-child(7),.split th:nth-child(9),.split th:nth-child(11){width:5%}
+  .split th.arr{width:10.3%}
+  /* respiro claro entre o bloco de metas (% do VGV) e o de conversão (Agendamento) */
+  .split th:nth-child(4),.split td:nth-child(4){padding-right:56px}
+  td.arr,th.arr{padding:6px 10px}
+  /* % CENTRADA na seta: ponta absoluta à direita, linhas simétricas dos dois lados do número */
+  td.arr .aw{display:flex;align-items:center;width:100%;color:var(--ink3);position:relative;padding-right:9px}
+  td.arr .aw i{flex:1;height:2px;background:var(--ink3);opacity:.45;border-radius:1px}
+  td.arr .aw b{padding:0 7px;font-size:13px;font-weight:600;font-style:normal;white-space:nowrap}
+  td.arr .aw u{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid var(--ink3);opacity:.6;text-decoration:none;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+  /* tabela SDR (Conversas): números grandes, % da seta menor (troca de hierarquia) */
+  .sdrfun th.arr{width:11%}
+  .sdrfun th:first-child{width:15%}
+  .tvcol .sdrfun tbody td{font-size:13px;padding:3px 7px}
+  .tvcol .sdrfun thead th{padding:0 7px 3px 0}
+  .sdrfun td.arr .aw b{font-size:10px}
+  #leg-origem{grid-template-columns:1fr;grid-auto-rows:1fr}
+  /* legendas dos gráficos maiores (TV menor ainda lê) */
+  .tvcrm .chart-row .legend .r{font-size:14px;gap:10px}
+  .tvcrm .chart-row .legend .d{width:10px;height:10px}
+  .tvcrm .dc b{font-size:24px}
+  .tvcrm .sect-card.stat .cap{font-size:13px}
+  .tvcrm .sect-card.stat .val{font-size:31px}
+  .tvcrm .sect-card.stat .sub{font-size:14px}
+  .tvcrm .blk>.sect-card{flex:1 1 auto;min-height:0}
+  /* tabela dividida: Metas | Conversão individual (etapas) */
+  .split{width:100%;border-collapse:collapse}
+  .split th,.split td{padding:3px 10px}
+  .split thead th{font-size:8.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);font-weight:600}
+  .split thead tr.grp th{font-size:8px;color:var(--ink2);border-bottom:1px solid var(--line);padding-bottom:2px}
+  .split tbody td{font-size:11px;border-top:1px solid var(--line)}
+  .split td .sub{font-size:8px;color:var(--ink3)}
+  .split td:first-child,.split th:first-child{text-align:left;width:17%}
+  .tvcol .row.kgrid{grid-template-columns:repeat(10,minmax(0,1fr));align-content:center}
+  /* aba Configuração (metas editáveis) */
+  .cfg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .cfg-item label{display:block;font-size:11px;color:var(--ink2);margin-bottom:5px;font-weight:600}
+  .cfg-item input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;background:#fff;color:var(--ink)}
+  .cfg-item input:disabled{background:var(--track);color:var(--ink3)}
+  .cfg-acts{display:flex;gap:10px;margin-top:16px}
+  .cfg-btn{padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}
+  .cfg-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .tvcol .row.c6{grid-template-columns:repeat(6,minmax(0,1fr));align-content:center}
+</style>
+</head>
+<body>
+
+<div class="backdrop" id="bd" onclick="toggleNav()"></div>
+<aside class="sidebar" id="sb">
+  <div class="logo"><img class="logo-img" src="logoapp.jpeg" alt="IM Incorporadora" onerror="this.outerHTML='&lt;div class=&quot;mk&quot;&gt;IM&lt;/div&gt;'"></div>
+  <nav class="nav" id="nav">
+    <a class="active" data-view="visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>KPIs</a>
+    <a data-view="crm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>RD CRM</a>
+    <a data-view="marketing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-7-7 18-2.5-7.5L3 11z"/></svg>RD Marketing</a>
+    <a data-view="conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.3 7.3L3 21l1.7-6.7A8 8 0 1 1 21 12z"/></svg>RD Conversas</a>
+    <a data-view="unidades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>Unidades / Estoque</a>
+    <a data-view="config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Configuração</a>
+    <a data-view="visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 16l3-4 3 2 4-6"/></svg>Metas</a>
+    <a data-view="visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 3h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"/></svg>Configurações</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="tb-left">
+      <button class="burger" onclick="toggleNav()" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="ttl-h"><h1 id="view-title">KPIs</h1><div class="sub">Dados buscados em <span id="t-busca"></span></div></div>
+    </div>
+    <div class="controls">
+      <div class="pill"><span id="t-data"></span></div>
+      <div class="pill" id="fsBtn" onclick="toggleFull()" title="Tela cheia (ideal na TV)">⛶ <span id="fsTxt">Tela cheia</span></div>
+      <div class="av">W</div>
+    </div>
+  </div>
+
+  <section class="view active" data-view="visao">
+  <div class="tvcol">
+    <div class="blk"><div class="lbl">Indicadores principais</div><div class="row kgrid">
+      <div class="card kpi"><div class="bdg" id="k-receita-bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/></svg></div><div><div class="cap">VGV fechado</div><div class="val num" id="k-receita"></div><div class="sub" id="k-receita-pc"></div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M9 4v16"/></svg></div><div><div class="cap">Pipeline ativo</div><div class="val num" id="k-pipe"></div><div class="sub" id="k-neg2"></div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><path d="M2 20a6 6 0 0 1 12 0M16 6a3 3 0 0 1 0 6"/></svg></div><div><div class="cap">Negociações ativas</div><div class="val num" id="k-neg"></div><div class="sub">em aberto</div></div></div>
+      <div class="card kpi win"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0z"/></svg></div><div><div class="cap">Win rate</div><div class="val red num" id="k-win"></div><div class="sub" id="k-win-sub"></div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="cap">Ciclo de vendas</div><div class="val num" id="k-ciclo"></div><div class="sub">médio</div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></div><div><div class="cap">Leads marketing</div><div class="val num" id="k-lmkt"></div><div class="sub">contatos MKT</div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1L3 20l1-5.5a8.5 8.5 0 1 1 17-3z"/></svg></div><div><div class="cap">Leads Conversas</div><div class="val num" id="k-lconv"></div><div class="sub">contatos totais</div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><div><div class="cap">Leads CRM</div><div class="val num" id="k-lcrm"></div><div class="sub">no período</div></div></div>
+      <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></div><div><div class="cap">Ticket médio</div><div class="val num" id="k-ticket"></div><div class="sub">por venda</div></div></div>
+      <div class="card kpi estoque"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></div><div><div class="cap">Estoque disponível</div><div class="val num" id="k-estoque"></div><div class="sub" id="k-estoque-sub"></div></div></div>
+    </div></div>
+
+    <div class="blk"><div class="row mid">
+      <div class="prev-card">
+        <h2>Previsão realista (mês)</h2>
+        <div class="prevbody">
+          <div class="ring" id="prev-ring"><div class="ring-in"><div class="v num" id="prev-v"></div><div class="l">da meta</div></div></div>
+          <div class="info"><div class="pc num" id="prev-pc"></div><div class="sub" id="prev-sub"></div></div>
+        </div>
+      </div>
+      <div class="sect-card"><h2>Metas do período</h2>
+        <div class="metas2">
+          <div class="mblk"><div class="mc">Meta VGV</div><div class="mv num" id="m-vgv-real"></div><div class="md num">de <span id="m-vgv-meta"></span></div><div class="trk"><i id="m-vgv-bar" style="background:var(--green)"></i></div><div class="pc" id="m-vgv-pc" style="color:var(--green)"></div></div>
+          <div class="mblk"><div class="mc">Meta entrada</div><div class="mv num" id="m-ent-real"></div><div class="md num">de <span id="m-ent-meta"></span></div><div class="trk"><i id="m-ent-bar" style="background:var(--amber)"></i></div><div class="pc" id="m-ent-pc" style="color:var(--amber)"></div></div>
+        </div>
+      </div>
+      <div class="sect-card"><h2>Pipeline executivo</h2><div class="pexec" id="pexec"></div></div>
+    </div></div>
+
+    <div class="blk"><div class="row s3 fill">
+      <div class="sect-card"><h2>Previsibilidade <span class="hint" title="Conceito da gestão de pipeline (G4 Sales): medindo o funil e as taxas de conversão por etapa, a receita deixa de ser surpresa — dá para prever quantos leads são necessários para 1 venda e quantas vendas o pipeline atual deve gerar no mês.">i</span></h2>
+        <div class="prevstack">
+          <div class="pbox pv2"><div class="cap">Leads p/ 1 venda</div><div class="valrow"><div class="val num" id="pv-leads"></div><div class="sub" id="pv-leads-sub"></div></div></div>
+          <div class="pbox pv2"><div class="cap">Vendas previstas / mês</div><div class="valrow"><div class="val num" id="pv-vendas"></div><div class="sub">pipeline × conversão</div></div></div>
+        </div>
+      </div>
+      <div class="sect-card scroll"><h2>Metas — Corretores e Coordenadoras</h2><table><thead><tr><th>Corretor / Coordenadora</th><th class="r">VGV mês</th><th class="r">Meta</th><th class="r">%</th><th class="r">Prev.</th></tr></thead><tbody id="vg-metas"></tbody></table></div>
+      <div class="sect-card scroll"><h2>Metas — SDRs</h2><table><thead><tr><th>SDR</th><th class="r">Agend.</th><th class="r">Meta</th><th class="r">%</th></tr></thead><tbody id="vg-sdrs"></tbody></table></div>
+    </div></div>
+
+    <div class="blk">
+      <div class="lbl">Conversões</div>
+      <div class="row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="card conv"><div class="cap">Lead → atendimento</div><div class="val num" id="kv-la"></div><div class="sub">SDRs · respondeu/conversou</div></div>
+        <div class="card conv"><div class="cap">Atendimento → agendamento</div><div class="val num" id="kv-aa"></div><div class="sub">SDRs · virou reunião</div></div>
+        <div class="card conv"><div class="cap">Lead → agendamento</div><div class="val num" id="cv-a"></div><div class="sub" id="cv-a-sub"></div></div>
+        <div class="card conv"><div class="cap">Agendamento → venda</div><div class="val num" id="cv-b"></div><div class="sub" id="cv-b-sub"></div></div>
+        <div class="card conv"><div class="cap">Lead → venda</div><div class="val num" id="cv-c"></div><div class="sub" id="cv-c-sub"></div></div>
+      </div>
+    </div>
+
+    <div class="blk"><div class="row g2 fill">
+      <div class="sect-card"><h2>Pipeline ponderado por etapa</h2><div class="chart-row"><div class="chart-box"><canvas id="pizzaEtapas"></canvas></div><div class="legend" id="leg-etapas"></div></div></div>
+      <div class="sect-card"><h2>Motivos de perda</h2><div class="chart-row mot"><div class="chart-box"><canvas id="pizzaMotivos"></canvas><div class="dc"><b id="dc-mot"></b></div></div><div class="legend" id="leg-motivos"></div></div></div>
+    </div></div>
+  </div>
+</section>
+
+  <section class="view" data-view="crm">
+    <div class="tvcol tvcrm">
+      <div class="blk"><div class="lbl">Visão do CRM (dado real)</div>
+        <div class="row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="sect-card stat"><div class="cap">Ganhos reais</div><div class="val num" id="crm-ganhos"></div><div class="sub">contagem real (win = ganho)</div></div>
+          <div class="sect-card stat"><div class="cap">VGV real dos ganhos</div><div class="val num" id="crm-vgv" style="color:var(--green)"></div><div class="sub">soma dos negócios ganhos</div></div>
+          <div class="sect-card stat"><div class="cap">Win rate</div><div class="val red num" id="crm-win"></div><div class="sub" id="crm-win-sub"></div></div>
+          <div class="sect-card stat"><div class="cap">Ciclo / competência</div><div class="val num" id="crm-ciclo" style="color:var(--amber)">N/D</div><div class="sub">competência não mensurável</div></div>
+        </div>
+      </div>
+      <div class="blk"><div class="lbl lbl2"><span>Metas corretores e coordenadoras</span><span>Conversão individual por corretor e coordenadora</span></div>
+        <div class="sect-card scroll"><table class="split">
+          <thead>
+            <tr><th>Corretor / Coordenadora</th><th class="r">VGV mês</th><th class="r">Meta</th><th class="r">% do VGV</th><th class="r">Agendamento</th><th class="arr"></th><th class="r">Atendimento realizado</th><th class="arr"></th><th class="r">Negociação</th><th class="arr"></th><th class="r">Fechamento</th></tr>
+          </thead>
+          <tbody id="crm-metas"></tbody>
+        </table></div>
+      </div>
+      <div class="blk"><div class="lbl">Pipeline ponderado por etapa</div>
+        <div class="sect-card scroll"><table><thead><tr><th>Etapa</th><th class="r">Peso</th><th class="r">Qtd</th><th class="r">Valor bruto</th><th class="r">Ponderado</th></tr></thead><tbody id="crm-etapas"></tbody></table></div>
+      </div>
+      <div class="blk s4">
+        <div class="s4grp"><div class="lbl">Origem da venda (ganhos reais)</div>
+          <div class="sect-card"><div class="chart-row"><div class="chart-box"><canvas id="pizzaOrigem"></canvas><div class="dc"><b id="dc-orig"></b></div></div><div class="legend" id="leg-origem"></div></div></div>
+        </div>
+        <div class="s4grp"><div class="lbl">Perdas — motivos de perda</div>
+          <div class="sect-card scroll"><table><thead><tr><th>Motivo</th><th class="r">Qtd</th><th class="r">%</th><th class="r">Valor</th></tr></thead><tbody id="crm-motivos"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-view="marketing">
+    <div class="lbl">Visão de Marketing</div>
+    <div class="row c3">
+      <div class="sect-card conv"><div class="cap">Leads marketing</div><div class="val num" id="mkt-leads"></div><div class="sub">contatos na base</div></div>
+      <div class="sect-card conv"><div class="cap">Conv. lead → agendamento</div><div class="val num">0,5%</div><div class="sub">32 agendamentos</div></div>
+      <div class="sect-card conv"><div class="cap">Conv. lead → venda</div><div class="val num">0,17%</div><div class="sub">11 de 6.300</div></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="conversas">
+    <div class="tvcol tvconv2">
+      <div class="blk"><div class="lbl">KPIs SDRs <span id="cv-periodo" style="opacity:.6;font-weight:400"></span></div>
+        <div class="row kgrid6">
+          <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1L3 20l1-5.5a8.5 8.5 0 1 1 17-3z"/></svg></div><div><div class="cap">Atendimentos</div><div class="val num" id="sdr-atend"></div><div class="sub">conversas dos SDRs</div></div></div>
+          <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></div><div><div class="cap">Leads</div><div class="val num" id="sdr-leads"></div><div class="sub">na carteira dos SDRs</div></div></div>
+          <div class="card kpi win"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="cap">Agendamentos</div><div class="val green num" id="sdr-agend"></div><div class="sub">meta 60/mês por SDR</div></div></div>
+          <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><div><div class="cap">Taxa de conversão</div><div class="val num" id="sdr-taxa"></div><div class="sub">agendamento / lead</div></div></div>
+          <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></div><div><div class="cap">Fora do ICP</div><div class="val num" id="sdr-icp"></div><div class="sub">filtrados na conversa</div></div></div>
+          <div class="card kpi"><div class="bdg"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M8 9l4 4 4-6"/></svg></div><div><div class="cap">Não respondeu</div><div class="val num" id="sdr-nresp"></div><div class="sub">sem retorno do lead</div></div></div>
+        </div>
+      </div>
+
+      <div class="blk"><div class="row mid">
+        <div class="sect-card"><h2>Funil de qualificação</h2><div class="pexec" id="sdr-funil"></div></div>
+        <div class="sect-card"><h2>Taxa de conversão por etapa</h2>
+          <div class="metas2 m3">
+            <div class="mblk"><div class="mc">Lead → atendimento</div><div class="mv num" id="sdr-c1"></div><div class="md">respondeu / conversou</div></div>
+            <div class="mblk"><div class="mc">Atendimento → agendamento</div><div class="mv num" id="sdr-c2"></div><div class="md">virou reunião</div></div>
+            <div class="mblk"><div class="mc">Lead → agendamento</div><div class="mv num" id="sdr-c3"></div><div class="md">ponta a ponta</div></div>
+          </div>
+        </div>
+        <div class="prev-card">
+          <h2>Atingimento da meta</h2>
+          <div class="prevbody">
+            <div class="ring" id="sdr-ring"><div class="ring-in"><div class="v num" id="sdr-taxa2"></div><div class="l">da meta</div></div></div>
+            <div class="info"><div class="pc num" id="sdr-agend2"></div><div class="sub" id="sdr-taxa-sub"></div></div>
+          </div>
+        </div>
+      </div></div>
+
+      <div class="blk"><div class="lbl">Desempenho do funil por SDR</div>
+        <div class="sect-card scroll"><table class="sdrfun"><thead><tr><th>SDR</th><th class="r">Leads</th><th class="arr"></th><th class="r">Atendimentos</th><th class="arr"></th><th class="r">Agendamentos</th><th class="r">% da meta</th><th class="r">Fora ICP</th><th class="r">Não respondeu</th></tr></thead><tbody id="sdr-tabela"></tbody></table></div>
+      </div>
+
+      <div class="blk"><div class="row g2 fill">
+        <div class="sect-card"><h2>Distribuição de agendamentos por SDR</h2><div class="chart-row"><div class="chart-box"><canvas id="pizzaAgSdr"></canvas><div class="dc"><b id="dc-agsdr"></b></div></div><div class="legend" id="leg-agsdr"></div></div></div>
+        <div class="sect-card"><h2>Classificação dos atendimentos</h2><div class="chart-row"><div class="chart-box"><canvas id="pizzaDesfSdr"></canvas><div class="dc"><b id="dc-desfsdr"></b></div></div><div class="legend" id="leg-desfsdr"></div></div></div>
+      </div></div>
+
+      <div class="blk"><div class="lbl">Rotação de agendamentos por corretor</div>
+        <div class="sect-card scroll"><table class="matrix"><thead id="rota-head"></thead><tbody id="sdr-rota"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-view="unidades">
+    <div class="lbl">Estoque (planilhas de vendas)</div>
+    <div class="row c3">
+      <div class="sect-card stat"><div class="cap">Estoque total</div><div class="val num" id="es-total"></div><div class="sub">unidades em todos os empreendimentos</div></div>
+      <div class="sect-card stat"><div class="cap">Disponível para venda</div><div class="val num" id="es-disp"></div><div class="sub">unidades</div></div>
+      <div class="sect-card stat"><div class="cap">Valor em estoque disponível</div><div class="val num" id="es-valor" style="color:var(--green)"></div><div class="sub">soma do valor das unidades disponíveis</div></div>
+    </div>
+    <div class="lbl">Por empreendimento</div>
+    <div class="sect-card"><table><thead><tr><th>Empreendimento</th><th class="r">Total un.</th><th class="r">Disponíveis</th><th class="r">Valor disponível</th></tr></thead><tbody id="es-tabela"></tbody></table>
+      <p class="note">Considera apenas o número de unidades e o valor das unidades disponíveis (unidades vendidas/reservadas não têm valor listado nas planilhas).</p>
+    </div>
+  </section>
+
+  <section class="view" data-view="config">
+    <div class="lbl">Configuração — metas do período</div>
+    <div class="sect-card"><div class="cfg-grid">
+      <div class="cfg-item"><label>Meta VGV (R$/mês)</label><input type="number" min="0" step="100000" id="cfg-vgv"></div>
+      <div class="cfg-item"><label>Meta entrada (R$/mês)</label><input type="number" min="0" step="10000" id="cfg-ent"></div>
+      <div class="cfg-item"><label>Meta de agendamentos por SDR (mês)</label><input type="number" min="0" step="5" id="cfg-sdr"></div>
+    </div></div>
+    <div class="lbl">Metas individuais — VGV mês (corretores e coordenadoras)</div>
+    <div class="sect-card"><div class="cfg-grid" id="cfg-pessoas"></div></div>
+    <div class="lbl">Faixas de cor — VGV fechado (% da meta)</div>
+    <div class="sect-card"><div class="cfg-grid">
+      <div class="cfg-item"><label>🔴 Vermelho até (%)</label><input type="number" min="0" max="100" id="cfg-t1"></div>
+      <div class="cfg-item"><label>🟡 Amarelo até (%)</label><input type="number" min="0" max="100" id="cfg-t2"></div>
+      <div class="cfg-item"><label>🟢 Verde</label><input type="text" value="acima do amarelo" disabled></div>
+    </div></div>
+    <div class="cfg-acts">
+      <button class="cfg-btn primary" onclick="cfgSalvar()">Salvar e aplicar</button>
+      <button class="cfg-btn" onclick="cfgReset()">Restaurar padrão</button>
+    </div>
+    <p class="note">As metas salvas aqui valem <b>neste navegador</b> (v1 sem banco de dados) e são aplicadas em todas as abas.</p>
+  </section>
+
+  <footer>Dashboard atualizado em <span id="t-foot"></span></footer>
+</main>
+
+<script>
+const DADOS = {"buscadoEm": "30/06/2026 às 14:22", "atualizadoEm": "30/06/2026 às 14:22", "dataFiltro": "30/06/2026", "metaVGV": 3200000.0, "metaEntrada": 300000.0, "realizadoVGV": 359000.0, "realizadoEntrada": 50000.0, "receitaFechada": 359000.0, "pipelineAtivo": 21803000.0, "previsaoPonderada": 12685750.0, "previsaoRealista": 699965, "negociacoesAtivas": 118, "leadsMarketing": 4125, "leadsCRM": 6331, "conversasTotal": 6681, "ticketMedio": 777738.92, "winRate": 0.49, "ganhos": 30, "perdidos": 6138, "cicloDias": null, "conversoes": {"leadAgend": 0.81, "agendVenda": null, "leadVenda": 0.47, "agendamentos": 51, "vendas": 30}, "previsibilidade": {"leadsPorVenda": 211, "vendasMes": 0.9, "receitaMes": 699965}, "pipelineExecutivo": [{"nome": "LEADs", "qtd": 29}, {"nome": "EM CONTATO", "qtd": 68}, {"nome": "AGENDAMENTO", "qtd": 15}, {"nome": "ATENDIMENTO REALIZADO", "qtd": 1}, {"nome": "NEGOCIAÇÃO", "qtd": 5}, {"nome": "Fechamento", "qtd": 30}], "estoque": {"total": 200, "disponivelQtd": 44, "disponivelValor": 46976275.59, "porEmpreendimento": [{"nome": "Laguna Sky Garden", "total": 75, "disp": 15, "valor": 26099057.15}, {"nome": "Sintropia Sky Garden", "total": 97, "disp": 29, "valor": 20877218.44}, {"nome": "Residencial Girassol", "total": 20, "disp": 0, "valor": 0.0}, {"nome": "Residencial Lótus", "total": 8, "disp": 0, "valor": 0.0}]}, "corretores": [{"nome": "Jéssica Cararo", "cargo": "Coordenadora de Plataforma", "vgv": 359000.0, "meta": 800000.0, "previsao": 0}, {"nome": "João Vasconcelos", "cargo": "Corretor", "vgv": 0.0, "meta": 800000.0, "previsao": 85750.0}, {"nome": "Jonathan Vitorino", "cargo": "Corretor", "vgv": 0.0, "meta": 800000.0, "previsao": 12600000.0}, {"nome": "Giovana", "cargo": "Coordenadora de Plataforma", "vgv": 0.0, "meta": 800000.0, "previsao": 0}], "etapas": [{"nome": "AGENDAMENTO", "peso": 25, "qtd": 15, "bruto": 0.0, "pond": 0.0}, {"nome": "ATENDIMENTO REALIZADO", "peso": 35, "qtd": 1, "bruto": 245000.0, "pond": 85750.0}, {"nome": "NEGOCIAÇÃO", "peso": 60, "qtd": 5, "bruto": 21000000.0, "pond": 12600000.0}], "motivos": [{"motivo": "Não tem mais interesse", "qtd": 3665, "valor": 476303569.6, "pct": 60}, {"motivo": "Não respondeu", "qtd": 787, "valor": 116051278.61, "pct": 13}, {"motivo": "Optou por outro empreendimento", "qtd": 563, "valor": 104866537.68, "pct": 9}, {"motivo": "Engano", "qtd": 514, "valor": 56521208.05, "pct": 8}, {"motivo": "Falta de entrada", "qtd": 267, "valor": 165806551.73, "pct": 4}, {"motivo": "Renda não alcançou o mínimo", "qtd": 193, "valor": 17322352.8, "pct": 3}, {"motivo": "Criança", "qtd": 35, "valor": 8962438.99, "pct": 1}, {"motivo": "Prazo de entrega", "qtd": 29, "valor": 4835315.13, "pct": 0}, {"motivo": "Localização", "qtd": 28, "valor": 16552963.61, "pct": 0}, {"motivo": "Parceria", "qtd": 20, "valor": 500000.0, "pct": 0}, {"motivo": "Metragem incompatível", "qtd": 17, "valor": 0.0, "pct": 0}, {"motivo": "teste", "qtd": 13, "valor": 1569152.38, "pct": 0}, {"motivo": "Falta de dados de contato", "qtd": 7, "valor": 0.0, "pct": 0}], "campanhas": [{"nome": "IMPORTAÇÃO GERAL 07/07 (TAG:CLIENTES)", "total": 25}, {"nome": "leads meta", "total": 0}, {"nome": "LEADS - FORMULARIO RENDA", "total": 25}, {"nome": "FORMS PARA OS TIMES - RENDA", "total": 25}, {"nome": "FORMS PARA OS TIMES - PERGUNTAS", "total": 3}, {"nome": "FORMS PARA OS TIMES - RENDA - ITAJAI", "total": 0}, {"nome": "SEGMENTAÇÃO - VACUOS", "total": 25}, {"nome": "leads que não receberam email laguna beach club", "total": 25}], "atendentes": [{"nome": "Thaisy"}, {"nome": "David Caua"}, {"nome": "Jonas"}, {"nome": "Amanda  Diorama"}, {"nome": "Agatha Moreira"}, {"nome": "Andrade"}, {"nome": "Ane Coltro"}, {"nome": "Watson Messias Slonski"}, {"nome": "Jessica Cararo"}, {"nome": "Bianca"}, {"nome": "Jonathan  Vitorino"}, {"nome": "Carolina Rita"}, {"nome": "Matheus Pires"}, {"nome": "Giovana Soares"}, {"nome": "Lucas  Palombo"}, {"nome": "João Vasconcelos"}, {"nome": "Adriano Gonçalves"}, {"nome": "Nicolas Sbalqueiro Dias"}, {"nome": "Dirlei Aparecido de Andrade"}, {"nome": "Steffany Maia"}, {"nome": "Alana"}, {"nome": "Renate"}, {"nome": "Alana"}, {"nome": "Caroline Sudre"}, {"nome": "Igor"}, {"nome": "Jean Bernard"}, {"nome": "Juddy Araujo"}, {"nome": "Renate Weidner"}, {"nome": "Jessica Cararo"}, {"nome": "Matheus Almeida"}, {"nome": "Alexandre"}, {"nome": "Johnny Nascimento"}, {"nome": "Alexandre"}, {"nome": "Maria Eduarda"}, {"nome": "Paola Freitas"}, {"nome": "Viviane"}, {"nome": "Fábio Silva"}, {"nome": "Pablo Pereira"}, {"nome": "Kelly Oliveira"}, {"nome": "Andriele Vieira"}, {"nome": "Zenilda Fernandes"}, {"nome": "Vinicius Santos"}, {"nome": "Corine Alberti"}, {"nome": "Richard Douglas"}, {"nome": "Yasmin Monteiro"}, {"nome": "Renata Cavalheiro"}, {"nome": "Flavia"}, {"nome": "Lucas Batista Dias"}, {"nome": "lucia"}, {"nome": "Sara Marques"}, {"nome": "Alessandro Grassi"}, {"nome": "Julio Siqueira"}], "vgvGanhos": 23332167.59, "origem": {"Corretor / Imobiliária": 19, "Mídias Externas (Outdoor, etc)": 1, "Indicação": 7, "Redes Sociais da Incorporadora, Mídias Externas (Outdoor, etc), Corretor / Imobiliária": 1, "Corretor / Imobiliária, Mídias Externas (Outdoor, etc), Redes Sociais da Incorporadora": 1, "Redes Sociais da Incorporadora": 1}, "sdrs": [{"sdr": "Nicolas Dias", "leads": 59, "agendou": 10, "realizados": 0, "negociacao": 0, "fechados": 0, "corretores": [{"nome": "João", "qtd": 19}, {"nome": "Jonathan", "qtd": 17}, {"nome": "Matheus", "qtd": 2}], "corretoresAgend": [{"nome": "João", "qtd": 6}, {"nome": "Jonathan", "qtd": 4}]}, {"sdr": "Dirlei Andrade", "leads": 46, "agendou": 0, "realizados": 0, "negociacao": 0, "fechados": 0, "corretores": [{"nome": "Jonathan", "qtd": 20}, {"nome": "João", "qtd": 14}, {"nome": "Matheus", "qtd": 8}, {"nome": "Carol", "qtd": 2}], "corretoresAgend": []}, {"sdr": "Adriano Gonçalves", "leads": 28, "agendou": 4, "realizados": 0, "negociacao": 0, "fechados": 0, "corretores": [{"nome": "Jonathan", "qtd": 12}, {"nome": "João", "qtd": 4}, {"nome": "Matheus", "qtd": 1}], "corretoresAgend": [{"nome": "João", "qtd": 2}, {"nome": "Matheus", "qtd": 1}, {"nome": "Jonathan", "qtd": 1}]}], "conversas": {"sdrLista": [{"nome": "Dirlei Aparecido de Andrade", "atend": 39, "enc": 0, "icp": 3, "nresp": 5, "sdr": true}, {"nome": "Nicolas Sbalqueiro Dias", "atend": 32, "enc": 1, "icp": 6, "nresp": 1, "sdr": true}, {"nome": "Adriano Gonçalves", "atend": 11, "enc": 1, "icp": 0, "nresp": 0, "sdr": true}], "total": {"atend": 82, "enc": 2, "icp": 9, "nresp": 6, "atendentes": 3, "periodo": {"inicio": "2026-06-01", "fim": "2026-06-30"}}, "desfechos": [{"nome": "Sem tabulação", "qtd": 54}, {"nome": "Fora do icp", "qtd": 9}, {"nome": "Solicitacao de parceria", "qtd": 8}, {"nome": "Nao respondeu / nao atendeu", "qtd": 6}, {"nome": "Encaminhado para o whatsapp", "qtd": 2}, {"nome": "Curriculo", "qtd": 1}, {"nome": "Por condicoes de pagamento", "qtd": 1}, {"nome": "Catalogo enviado", "qtd": 1}], "analytics": {"summary": {"attendancesTotal": 384, "tma": {"val": 3, "unit": "h"}, "tme": {"val": 0, "unit": "min"}, "tmeOut": {"val": 0, "unit": "min"}}, "retention": {"retention": 11.5, "chatBotAttendances": 51}}}, "metaAgendamentos": 60, "conversaoIndividual": {"joão": {"ag": 9, "re": 1, "ne": 0, "fe": 13}, "jonathan": {"ag": 5, "re": 0, "ne": 5, "fe": 9}, "cida": {"ag": 0, "re": 0, "ne": 0, "fe": 1}, "matheus": {"ag": 1, "re": 0, "ne": 0, "fe": 1}, "adilson": {"ag": 0, "re": 0, "ne": 0, "fe": 3}, "daiane": {"ag": 0, "re": 0, "ne": 0, "fe": 1}}};
+
+const f0 = n => 'R$ ' + Math.round(n).toLocaleString('pt-BR');
+const fM = n => 'R$ ' + (n/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'M';
+const f2 = n => 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct1 = v => v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
+const set = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+const nf = n => Number(n).toLocaleString('pt-BR');
+const TITLES = {visao:'KPIs', crm:'RD CRM', marketing:'RD Marketing', conversas:'RD Conversas', unidades:'Unidades / Estoque', config:'Configuração'};
+
+function toggleNav(){document.getElementById('sb').classList.toggle('open');document.getElementById('bd').classList.toggle('show');}
+function toggleFull(){ if(document.fullscreenElement){document.exitFullscreen();} else {var el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen).call(el);} }
+document.addEventListener('fullscreenchange',function(){ var t=document.getElementById('fsTxt'); if(t) t.textContent=document.fullscreenElement?'Sair':'Tela cheia'; });
+function showView(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active', s.dataset.view===v));
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.view===v));
+  set('view-title', TITLES[v]||'KPIs');
+  document.getElementById('sb').classList.remove('open'); document.getElementById('bd').classList.remove('show');
+  window.scrollTo(0,0);
+}
+document.getElementById('nav').addEventListener('click', e=>{ const a=e.target.closest('a'); if(a) showView(a.dataset.view); });
+
+// ── Configuração (metas editáveis — salvas neste navegador via localStorage) ──
+const CFG = (function(){ try{ return JSON.parse(localStorage.getItem('cfgMetas')||'{}'); }catch(e){ return {}; } })();
+(function aplicaCfg(){
+  if(CFG.metaVGV>0) DADOS.metaVGV=CFG.metaVGV;
+  if(CFG.metaEntrada>0) DADOS.metaEntrada=CFG.metaEntrada;
+  if(CFG.metaAgendamentos>0) DADOS.metaAgendamentos=CFG.metaAgendamentos;
+  if(CFG.metasPessoa) (DADOS.corretores||[]).forEach(c=>{ const v=CFG.metasPessoa[c.nome]; if(v>0) c.meta=v; });
+})();
+function cfgInit(){
+  const el=id=>document.getElementById(id);
+  if(!el('cfg-vgv')) return;
+  el('cfg-vgv').value=DADOS.metaVGV||''; el('cfg-ent').value=DADOS.metaEntrada||'';
+  el('cfg-sdr').value=DADOS.metaAgendamentos||60;
+  el('cfg-t1').value=(CFG.vgvT1!=null?CFG.vgvT1:50); el('cfg-t2').value=(CFG.vgvT2!=null?CFG.vgvT2:80);
+  el('cfg-pessoas').innerHTML=(DADOS.corretores||[]).map((c,i)=>
+    `<div class="cfg-item"><label>${c.nome} <span class="sub" style="display:inline">· ${c.cargo}</span></label>`+
+    `<input type="number" min="0" step="10000" data-nome="${c.nome}" class="cfg-meta-p" value="${c.meta||0}"></div>`).join('');
+}
+function cfgSalvar(){
+  const el=id=>document.getElementById(id); const num=id=>parseFloat(el(id).value)||0;
+  const mp={}; document.querySelectorAll('.cfg-meta-p').forEach(i=>{ mp[i.dataset.nome]=parseFloat(i.value)||0; });
+  const cfg={metaVGV:num('cfg-vgv'), metaEntrada:num('cfg-ent'), metaAgendamentos:num('cfg-sdr'),
+             vgvT1:num('cfg-t1'), vgvT2:num('cfg-t2'), metasPessoa:mp};
+  localStorage.setItem('cfgMetas', JSON.stringify(cfg));
+  location.reload();
+}
+function cfgReset(){ localStorage.removeItem('cfgMetas'); location.reload(); }
+
+const PIE = ['#2f6cea','#1aa053','#e0a93a','#e3534f','#7b6ee0','#1baf7a','#9aa3b2','#5b8bef'];
+
+function render(){
+  const d = DADOS;
+  set('t-busca', d.buscadoEm); set('t-data', d.dataFiltro+' '); set('t-foot', d.atualizadoEm);
+
+  const pVGV = d.metaVGV? d.realizadoVGV/d.metaVGV*100 : 0;
+  const pENT = d.metaEntrada? d.realizadoEntrada/d.metaEntrada*100 : 0;
+  const cobertura = d.metaVGV? d.previsaoPonderada/d.metaVGV*100 : 0;
+  const c = d.conversoes||{}, pv = d.previsibilidade||{};
+
+  // KPIs
+  // VGV fechado: cor por faixa da meta (config: vermelho até t1, amarelo até t2, verde acima)
+  const _t1=(CFG.vgvT1!=null?CFG.vgvT1:50), _t2=(CFG.vgvT2!=null?CFG.vgvT2:80);
+  const _vgvCol = pVGV<=_t1?'var(--red)':pVGV<=_t2?'var(--amber)':'var(--green)';
+  set('k-receita', f0(d.receitaFechada)); set('k-receita-pc', pct1(pVGV)+' da meta no mês');
+  const _kr=document.getElementById('k-receita'); if(_kr) _kr.style.color=_vgvCol;
+  const _krb=document.getElementById('k-receita-bdg'); if(_krb) _krb.style.background=_vgvCol;
+  set('k-lconv', nf(d.conversasTotal));
+  set('k-pipe', fM(d.pipelineAtivo)); set('k-neg2', d.negociacoesAtivas+' negócios');
+  set('k-neg', d.negociacoesAtivas);
+  set('k-win', pct1(d.winRate)); set('k-win-sub', 'ganho / perda');
+  set('k-ciclo', (d.cicloDias==null?'N/D':d.cicloDias+' dias'));
+  set('k-lmkt', nf(d.leadsMarketing)); set('k-lcrm', nf(d.leadsCRM)); set('k-ticket', f0(d.ticketMedio));
+  set('k-estoque', nf(d.estoque.disponivelQtd)+' un');
+  set('k-estoque-sub', fM(d.estoque.disponivelValor));
+
+  // Conversões (até 2 casas — preserva 0,17%)
+  const cpct = v => v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2})+'%';
+  set('cv-a', cpct(c.leadAgend||0)); set('cv-a-sub', (c.agendamentos||0)+' chegaram ao agendamento+');
+  if(c.agendVenda==null){ set('cv-b','N/D'); set('cv-b-sub','requer histórico de etapas'); }
+  else { set('cv-b', cpct(c.agendVenda)); set('cv-b-sub', (c.vendas||0)+' vendas'); }
+  set('cv-c', cpct(c.leadVenda||0)); set('cv-c-sub', (c.vendas||0)+' de '+nf(d.leadsCRM)+' · fonte: corretor/indicação');
+
+  // Previsibilidade
+  set('pv-leads', nf(pv.leadsPorVenda||0)+' leads'); set('pv-leads-sub', nf(d.leadsCRM)+' ÷ '+d.ganhos+' vendas');
+  set('pv-vendas', (pv.vendasMes||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'/mês');
+  set('pv-receita', f0(pv.receitaMes||0)); set('pv-receita-sub', (pv.vendasMes||0)+' × '+f0(d.ticketMedio));
+
+  // Previsão REALISTA (consistente com a previsibilidade) + anel vs meta
+  const realista = d.previsaoRealista || ((d.previsibilidade||{}).receitaMes) || 0;
+  const covReal = d.metaVGV? realista/d.metaVGV*100 : 0;
+  set('prev-v', Math.round(covReal)+'%'); set('prev-pc', f0(realista));
+  document.getElementById('prev-ring').style.setProperty('--p', Math.min(covReal,100).toFixed(0)+'%');
+  set('prev-sub', ((d.previsibilidade||{}).vendasMes||0)+' × '+f0(d.ticketMedio)+' · anel = '+Math.round(covReal)+'% da meta · potencial em aberto: '+fM(d.pipelineAtivo)+' (ponderado '+fM(d.previsaoPonderada)+')');
+
+  // Metas (única — pacing foi unificado aqui)
+  set('m-vgv-real', f0(d.realizadoVGV)); set('m-vgv-meta', f0(d.metaVGV));
+  document.getElementById('m-vgv-bar').style.width = Math.min(pVGV,100)+'%'; set('m-vgv-pc', pct1(pVGV)+' atingido');
+  set('m-ent-real', f0(d.realizadoEntrada)); set('m-ent-meta', f0(d.metaEntrada));
+  document.getElementById('m-ent-bar').style.width = Math.min(pENT,100)+'%'; set('m-ent-pc', pct1(pENT)+' atingido');
+
+  // Pipeline executivo (barras)
+  const pe = d.pipelineExecutivo||[]; const maxPe = Math.max(1,...pe.map(x=>x.qtd));
+  document.getElementById('pexec').innerHTML = pe.map(x=>
+    `<div class="r"><span class="nm">${x.nome}</span><span class="bar"><i style="width:${x.qtd/maxPe*100}%"></i></span><span class="vl num">${x.qtd}</span></div>`).join('');
+
+  // (Resumo por módulos saiu dos KPIs — Conversas virou card nos indicadores principais)
+
+  // Corretores / Coordenadoras (separados na aba KPIs; juntos no CRM)
+  // cargo INLINE (1 linha por pessoa) — garante todas as linhas visíveis em qualquer escala de tela
+  const crRow = cr=>{ const p = cr.meta? cr.vgv/cr.meta*100 : 0; const col = p>=50?'var(--green)':p>0?'var(--amber)':'var(--ink3)';
+    return `<tr><td>${cr.nome} <span class="sub" style="display:inline">· ${cr.cargo}</span></td><td class="r num">${f0(cr.vgv)}</td><td class="r num">${f0(cr.meta)}</td>`
+      + `<td class="r num" style="color:${col};font-weight:600">${Math.round(p)}%<div class="tbar" style="margin-top:2px"><i style="width:${Math.min(p,100)}%;background:${col}"></i></div></td>`
+      + `<td class="r num">${f0(cr.previsao)}</td></tr>`;};
+  const _cr = (d.corretores||[]); const _isCoord = c=>/coorden/i.test(c.cargo||'');
+  const _put = (id,list)=>{ const el=document.getElementById(id); if(el) el.innerHTML=list.map(crRow).join(''); };
+  _put('vg-metas', _cr.filter(c=>!_isCoord(c)).concat(_cr.filter(_isCoord)));  // corretores primeiro
+  // Metas — SDRs (KPIs): agendamentos vs meta 60/mês, mesmo padrão visual das metas
+  const _vgSdrs = document.getElementById('vg-sdrs');
+  if(_vgSdrs){ const _mAg = d.metaAgendamentos||60;
+    _vgSdrs.innerHTML = (d.sdrs||[]).map(s=>{ const p=_mAg? s.agendou/_mAg*100:0; const col=p>=50?'var(--green)':p>0?'var(--amber)':'var(--ink3)';
+      return `<tr><td>${s.sdr}</td><td class="r num" style="font-weight:600">${s.agendou}</td><td class="r num">${_mAg}</td>`
+        + `<td class="r num" style="color:${col};font-weight:600">${Math.round(p)}%<div class="tbar" style="margin-top:2px"><i style="width:${Math.min(p,100)}%;background:${col}"></i></div></td></tr>`;}).join('');
+  }
+  // CRM: metas + conversão individual (etapas) por pessoa na MESMA linha (tabela dividida)
+  const _conv = d.conversaoIndividual||{};
+  const _crmMetas = document.getElementById('crm-metas');
+  if(_crmMetas) _crmMetas.innerHTML = _cr.map(cr=>{
+    const p = cr.meta? cr.vgv/cr.meta*100 : 0; const col = p>=50?'var(--green)':p>0?'var(--amber)':'var(--ink3)';
+    const cv = _conv[(cr.nome||'').trim().split(' ')[0].toLowerCase()]||{};
+    const st = [cv.ag||0, cv.re||0, cv.ne||0, cv.fe||0];
+    // valor da etapa; a % de conversão fica na SETA entre as colunas
+    const etC = (i,green)=>{ const v=st[i]; const c=v?(green?'var(--green)':'var(--ink)'):'var(--ink3)';
+      return `<td class="r num" style="color:${c};font-weight:${v&&green?600:400}">${v||'—'}</td>`;};
+    const arr = i=>{ const a=st[i], b=st[i+1];
+      const pc=(a>0&&b>0)? Math.round(b/a*100)+'%':'';
+      if(!a&&!b) return '<td class="arr"></td>';
+      return `<td class="arr"><span class="aw"><i></i>${pc?`<b>${pc}</b><i></i>`:''}<u></u></span></td>`;};
+    return `<tr><td>${cr.nome}<div class="sub">${cr.cargo}</div></td>`
+      + `<td class="r num">${f0(cr.vgv)}</td><td class="r num">${f0(cr.meta)}</td>`
+      + `<td class="r num" style="color:${col};font-weight:600">${Math.round(p)}%<div class="tbar" style="margin-top:3px"><i style="width:${Math.min(p,100)}%;background:${col}"></i></div></td>`
+      + etC(0,false)+arr(0)+etC(1,false)+arr(1)+etC(2,false)+arr(2)+etC(3,true)+`</tr>`;
+  }).join('');
+
+  // ── Pizzas ── (pipeline ponderado = MESMAS métricas da tabela do CRM, incl. fechado)
+  const et = (d.etapas||[]);
+  donut('pizzaEtapas','leg-etapas',
+    et.map(e=>e.nome).concat(['FECHADO (ganho)']),
+    et.map(e=>e.pond).concat([d.vgvGanhos||0]), v=>f0(v));
+  const mo = (d.motivos||[]);
+  let moT = mo.slice(0,9); const _rest = mo.slice(9);
+  if(_rest.length) moT = moT.concat([{motivo:'Outros', qtd:_rest.reduce((a,b)=>a+(b.qtd||0),0)}]);
+  donut('pizzaMotivos','leg-motivos', moT.map(m=>m.motivo), moT.map(m=>m.qtd), v=>nf(v));
+  set('dc-mot', nf(mo.reduce((a,b)=>a+(b.qtd||0),0)));
+
+  // ── CRM tab ──
+  set('crm-ganhos', nf(d.ganhos));
+  set('crm-vgv', fM(d.vgvGanhos||0));
+  set('crm-win', pct1(d.winRate)); set('crm-win-sub', d.ganhos+' ganhos / '+nf(d.perdidos)+' perdidos');
+  set('crm-ciclo', d.cicloDias==null?'N/D':(d.cicloDias==null?'N/D':d.cicloDias+' dias'));
+  // Origem da venda (ganhos reais) — donut (pizza), top 4 + "Outros"
+  const _org = d.origem||{};
+  let _orgItems = Object.entries(_org).sort((a,b)=>b[1]-a[1]);
+  const _orgRest = _orgItems.slice(4);
+  _orgItems = _orgItems.slice(0,4);
+  if(_orgRest.length) _orgItems.push(['Outros ('+_orgRest.length+')', _orgRest.reduce((a,b)=>a+b[1],0)]);
+  donut('pizzaOrigem','leg-origem', _orgItems.map(x=>x[0]), _orgItems.map(x=>x[1]), v=>nf(v));
+  set('dc-orig', nf(_orgItems.reduce((a,b)=>a+b[1],0)));
+  document.getElementById('crm-etapas').innerHTML = (d.etapas||[]).map(e=>
+    `<tr><td>${e.nome}</td><td class="r">${e.peso}%</td><td class="r num">${e.qtd}</td><td class="r num">${f0(e.bruto)}</td><td class="r num" style="font-weight:600">${f0(e.pond)}</td></tr>`).join('')
+    + `<tr><td style="color:var(--green);font-weight:600">FECHADO (ganho)</td><td class="r">100%</td><td class="r num">${d.ganhos}</td><td class="r num">${f0(d.vgvGanhos||0)}</td><td class="r num" style="color:var(--green);font-weight:700">${f0(d.vgvGanhos||0)}</td></tr>`;
+  // Perdas: top 6 motivos + "Outros" agregado (cabe na tela de TV sem scroll)
+  let moC = mo.slice(0,6); const _moR = mo.slice(6);
+  if(_moR.length) moC = moC.concat([{motivo:'Outros ('+_moR.length+' motivos)', qtd:_moR.reduce((a,b)=>a+(b.qtd||0),0), pct:_moR.reduce((a,b)=>a+(b.pct||0),0), valor:_moR.reduce((a,b)=>a+(b.valor||0),0)}]);
+  document.getElementById('crm-motivos').innerHTML = (moC.length)? moC.map(m=>
+    `<tr><td>${m.motivo}</td><td class="r num">${nf(m.qtd)}</td><td class="r num">${m.pct}%</td><td class="r num">${f2(m.valor)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="color:var(--ink3)">Sem motivos preenchidos no RD.</td></tr>';
+
+  // ── Marketing tab (só os cards principais por enquanto) ──
+  set('mkt-leads', nf(d.leadsMarketing));
+
+  // ── Conversas tab — 100% focada nos 3 SDRs (Nicolas, Dirlei, Adriano) ──
+  const sdrs = d.sdrs||[];
+  const cv = d.conversas||{sdrLista:[],total:{},desfechos:[]}; const cvt = cv.total||{};
+  const metaAg = d.metaAgendamentos||60;
+  // junta CRM (leads/agendou/corretores) + RD Conversas (atendimentos/desfechos) por 1º nome
+  const _convByFn = {}; (cv.sdrLista||[]).forEach(a=>{ _convByFn[(a.nome||'').trim().split(' ')[0].toLowerCase()]=a; });
+  const SR = sdrs.map(s=>{ const fn=(s.sdr||'').split(' ')[0].toLowerCase(); const v=_convByFn[fn]||{};
+    return {nome:s.sdr, atend:v.atend||0, icp:v.icp||0, nresp:v.nresp||0, leads:s.leads||0, agendou:s.agendou||0, corretores:s.corretoresAgend||[]}; });
+  const _T = SR.reduce((o,r)=>({atend:o.atend+r.atend, leads:o.leads+r.leads, agendou:o.agendou+r.agendou, icp:o.icp+r.icp, nresp:o.nresp+r.nresp}), {atend:0,leads:0,agendou:0,icp:0,nresp:0});
+  const _pctI = (a,b)=> b? Math.round(a/b*100) : 0;
+  // Band 1 — indicadores dos SDRs
+  set('sdr-atend', nf(_T.atend));
+  set('sdr-leads', nf(_T.leads));
+  set('sdr-agend', nf(_T.agendou));
+  set('sdr-taxa', _pctI(_T.agendou,_T.leads)+'%');
+  set('sdr-icp', nf(_T.icp));
+  set('sdr-nresp', nf(_T.nresp));
+  const _per = cvt.periodo||{};
+  if(_per.inicio) set('cv-periodo', '('+_per.inicio+' a '+_per.fim+')');
+  // Band 2 — anel = % da META (60/mês POR SDR → time = 60 × nº SDRs) + funil + conversões
+  const _metaTime = metaAg * (SR.length||1);
+  const _metaPct = _pctI(_T.agendou, _metaTime);
+  set('sdr-taxa2', _metaPct+'%');
+  set('sdr-agend2', _T.agendou+' / '+_metaTime);
+  set('sdr-taxa-sub', 'meta '+metaAg+'/mês por SDR · '+SR.length+' SDRs');
+  const _ring = document.getElementById('sdr-ring'); if(_ring) _ring.style.setProperty('--p', Math.min(_metaPct,100)+'%');
+  const _sfun = [
+    {nome:'Leads', qtd:_T.leads},
+    {nome:'Atendeu', qtd:_T.atend},
+    {nome:'Agendou', qtd:_T.agendou},
+  ];
+  const _sfmax = Math.max(1,..._sfun.map(x=>x.qtd));
+  const _funEl2 = document.getElementById('sdr-funil');
+  if(_funEl2) _funEl2.innerHTML = _sfun.map(x=>
+    `<div class="r"><span class="nm">${x.nome}</span><span class="bar"><i style="width:${x.qtd/_sfmax*100}%"></i></span><span class="vl num">${nf(x.qtd)}</span></div>`).join('');
+  set('sdr-c1', _pctI(_T.atend,_T.leads)+'%');
+  set('sdr-c2', _pctI(_T.agendou,_T.atend)+'%');
+  set('sdr-c3', _pctI(_T.agendou,_T.leads)+'%');
+  // mesmos números na seção Conversões dos KPIs (taxa de conversão por etapa)
+  set('kv-la', _pctI(_T.atend,_T.leads)+'%');
+  set('kv-aa', _pctI(_T.agendou,_T.atend)+'%');
+  // Band 3 — tabela por SDR (os 3) + % da meta individual (agendou / 60)
+  const _sdrT = document.getElementById('sdr-tabela');
+  // seta com % no meio entre as etapas (mesmo padrão do CRM)
+  const _arw=(a,b)=>{ const pc=(a>0&&b>0)?Math.round(b/a*100)+'%':'';
+    if(!a&&!b) return '<td class="arr"></td>';
+    return `<td class="arr"><span class="aw"><i></i>${pc?`<b>${pc}</b><i></i>`:''}<u></u></span></td>`;};
+  if(_sdrT) _sdrT.innerHTML = SR.map(r=>{ const mp=_pctI(r.agendou,metaAg); const mc=mp>=100?'var(--green)':mp>=50?'var(--amber)':mp>0?'var(--blue)':'var(--ink3)';
+    return `<tr><td><b>${r.nome}</b></td><td class="r num">${nf(r.leads)}</td>`+_arw(r.leads,r.atend)
+      +`<td class="r num" style="font-weight:600">${nf(r.atend)}</td>`+_arw(r.atend,r.agendou)
+      +`<td class="r num" style="color:var(--green);font-weight:700">${nf(r.agendou)}</td><td class="r num" style="color:${mc};font-weight:600">${mp}%</td><td class="r num" style="color:var(--ink3)">${nf(r.icp)}</td><td class="r num" style="color:var(--ink3)">${nf(r.nresp)}</td></tr>`;}).join('')
+    || '<tr><td colspan="9" style="color:var(--ink3)">Sem SDRs no período.</td></tr>';
+  // Band 4 — agendamentos por corretor: só João e Jonathan; Total = agendamentos reais do SDR
+  const _CORR = ['João', 'Jonathan'];
+  const _rhead = document.getElementById('rota-head');
+  if(_rhead) _rhead.innerHTML = '<tr><th>SDR</th>'+_CORR.map(n=>`<th class="r">${n}</th>`).join('')+'<th class="r">Total</th></tr>';
+  const _rota = document.getElementById('sdr-rota');
+  if(_rota) _rota.innerHTML = SR.map(r=>{
+    const m={}; (r.corretores||[]).forEach(c=>m[c.nome]=c.qtd);
+    const mx=Math.max(0,..._CORR.map(n=>m[n]||0));
+    const cells=_CORR.map(n=>{ const v=m[n]||0; return `<td class="r num"${v&&v===mx?' style="font-weight:700;color:var(--ink)"':' style="color:var(--ink3)"'}>${v||'—'}</td>`; }).join('');
+    return `<tr><td><b>${r.nome}</b></td>${cells}<td class="r num" style="color:var(--green);font-weight:700">${nf(r.agendou)}</td></tr>`;
+  }).join('');
+  // Band 5 — donuts: agendamentos por SDR + desfecho das conversas dos SDRs
+  donut('pizzaAgSdr','leg-agsdr', SR.map(r=>r.nome), SR.map(r=>r.agendou), v=>nf(v));
+  set('dc-agsdr', nf(_T.agendou));
+  const _des = (cv.desfechos||[]); let _desT=_des.slice(0,7); const _dr=_des.slice(7);
+  if(_dr.length) _desT=_desT.concat([{nome:'Outros',qtd:_dr.reduce((a,b)=>a+(b.qtd||0),0)}]);
+  donut('pizzaDesfSdr','leg-desfsdr', _desT.map(x=>x.nome), _desT.map(x=>x.qtd), v=>nf(v));
+  set('dc-desfsdr', nf(_des.reduce((a,b)=>a+(b.qtd||0),0)));
+
+  // ── Estoque tab ──
+  const es = d.estoque;
+  set('es-total', nf(es.total)+' un'); set('es-disp', nf(es.disponivelQtd)+' un'); set('es-valor', f2(es.disponivelValor));
+  document.getElementById('es-tabela').innerHTML = (es.porEmpreendimento||[]).map(e=>
+    `<tr><td>${e.nome}</td><td class="r num">${e.total}</td><td class="r num">${e.disp}</td><td class="r num">${e.valor?f2(e.valor):'—'}</td></tr>`).join('')
+    + `<tr style="font-weight:700"><td>TOTAL</td><td class="r num">${nf(es.total)}</td><td class="r num">${nf(es.disponivelQtd)}</td><td class="r num">${f2(es.disponivelValor)}</td></tr>`;
+}
+
+function donut(canvasId, legId, labels, data, fmt){
+  const cols = labels.map((_,i)=>PIE[i%PIE.length]);
+  const tot = data.reduce((a,b)=>a+b,0)||1;
+  // Legenda sempre (mesmo se o Chart.js não carregar)
+  const leg = document.getElementById(legId);
+  if(leg) leg.innerHTML = labels.map((l,i)=>
+    `<div class="r"><span class="numgrp"><span class="d" style="background:${cols[i]}"></span><b class="vv">${fmt(data[i])} · ${Math.round(data[i]/tot*100)}%</b></span><span class="lg">${l}</span></div>`).join('');
+  // Gráfico de pizza (precisa do Chart.js da internet)
+  if(!window.Chart || !document.getElementById(canvasId)) return;
+  new Chart(document.getElementById(canvasId), {
+    type:'doughnut',
+    data:{labels, datasets:[{data, backgroundColor:cols, borderWidth:2, borderColor:'#fff'}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.parsed)}}}}
+  });
+}
+
+render();
+cfgInit();
+// ── SÓ o CRM usa palco fixo escalado (KPIs/Conversas ficam no fr, intocados) ──
+function fitStage(){
+  var col=document.querySelector('.view.active .tvcol.tvcrm'); if(!col){return;}
+  var view=col.parentElement;
+  var DW=1840, DH=1010;
+  var s=Math.min(view.clientWidth/DW, view.clientHeight/DH);
+  col.style.transform='scale('+s+')';
+  col.style.marginLeft=Math.max(0,(view.clientWidth-DW*s)/2)+'px';
+}
+window.addEventListener('resize',fitStage);
+setTimeout(fitStage,60);
+var _os=showView;showView=function(v){_os(v);setTimeout(fitStage,20);};
+</script>
+</body>
+</html>
